@@ -3,10 +3,8 @@ package com.example.floattest
 import android.app.Activity
 import android.content.Intent
 import android.net.Uri
-import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
-import com.google.android.material.snackbar.Snackbar
 import androidx.appcompat.app.AppCompatActivity
 import androidx.navigation.findNavController
 import androidx.navigation.ui.AppBarConfiguration
@@ -41,7 +39,7 @@ class MainActivity : AppCompatActivity() {
                 print("Floating Action Button Clicked");
                 EasyWindow.with(application) // 'this' refers to the current Activity
                     .setDraggable()
-                    .setContentView(R.layout.toast_hint)
+                    .setContentView(R.layout.float_widget)
                     .setText(android.R.id.message, "lol")
                     .setOnClickListener(android.R.id.message, EasyWindow.OnClickListener<TextView?> { easyWindow, view ->
                         easyWindow.cancel()
