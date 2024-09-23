@@ -1,5 +1,7 @@
 package com.example.floattest
 
+import android.animation.Animator
+import android.animation.ObjectAnimator
 import android.content.ClipboardManager
 import android.content.Context
 import android.app.Activity
@@ -26,6 +28,9 @@ import android.widget.Toast
 import com.example.floattest.databinding.ActivityMainBinding
 import com.example.floattest.databinding.MenuBinding
 import com.hjq.window.EasyWindow
+import com.hjq.window.draggable.BaseDraggable
+import com.hjq.window.draggable.SpringBackDraggable
+
 const val REQUEST_CODE_OVERLAY_PERMISSION = 1000
 class MainActivity : AppCompatActivity() {
     private lateinit var clipboardManager: ClipboardManager
@@ -93,10 +98,51 @@ class MainActivity : AppCompatActivity() {
                 || super.onSupportNavigateUp()
     }
     fun showFloatWidget(){
-        EasyWindow.with(application) // 'this' refers to the current Activity
+        val displayMetrics = DisplayMetrics()
+        windowManager.defaultDisplay.getMetrics(displayMetrics)
+        val screenWidth = displayMetrics.widthPixels
+
+        val easyFloatWindow = EasyWindow.with(application)
+        val springBackDraggable = SpringBackDraggable(SpringBackDraggable.ORIENTATION_HORIZONTAL)
+        springBackDraggable.isAllowMoveToScreenNotch = false
+        springBackDraggable.setSpringBackAnimCallback(object : SpringBackDraggable.SpringBackAnimCallback {
+            override fun onSpringBackAnimationStart(easyWindow: EasyWindow<*>?, animator: Animator?) {}
+
+            override fun onSpringBackAnimationEnd(easyWindow: EasyWindow<*>?, animator: Animator?) {
+                if (easyFloatWindow != null) {
+                    easyFloatWindow.decorView?.let { decorView ->
+                        if (easyFloatWindow .windowParams.x < screenWidth / 2) {
+                            decorView.translationX = (-20).toFloat()
+                            val objectAnimator = ObjectAnimator.ofFloat(decorView, "translationX", 0f, (-20).toFloat())
+                            objectAnimator.duration = 300
+                            objectAnimator.start()
+                        } else {
+                            decorView.translationX = (20).toFloat()
+                            val objectAnimator = ObjectAnimator.ofFloat(decorView, "translationX", 0f, (20).toFloat())
+                            objectAnimator.duration = 300
+                            objectAnimator.start()
+                        }
+                    }
+                }
+            }
+        })
+        springBackDraggable.setDraggingCallback(object : BaseDraggable.DraggingCallback {
+            override fun onStartDragging(easyWindow: EasyWindow<*>?) {
+                super.onStartDragging(easyWindow)
+                if (easyFloatWindow  != null) {
+                    easyFloatWindow .decorView.translationX = (0).toFloat()
+                }
+            }
+
+            override fun onStopDragging(easyWindow: EasyWindow<*>?) {
+                super.onStopDragging(easyWindow)
+            }
+        })
+
+        easyFloatWindow  // 'this' refers to the current Activity
             .setTag("floating_window")
-            .setDraggable()
-            .setGravity(Gravity.HORIZONTAL_GRAVITY_MASK)
+            .setDraggable(springBackDraggable)
+            .setGravity(Gravity.END or Gravity.CENTER)
             .setContentView(R.layout.float_widget)
             .setOnClickListener(android.R.id.icon, EasyWindow.OnClickListener<ImageView?> { easyWindow, view ->
                 easyWindow.cancel()
