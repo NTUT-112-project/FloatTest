@@ -1,5 +1,7 @@
 package com.example.floattest
 
+import android.content.ClipboardManager
+import android.content.Context
 import android.app.Activity
 import android.content.Intent
 import android.net.Uri
@@ -26,12 +28,23 @@ import com.example.floattest.databinding.MenuBinding
 import com.hjq.window.EasyWindow
 const val REQUEST_CODE_OVERLAY_PERMISSION = 1000
 class MainActivity : AppCompatActivity() {
-
+    private lateinit var clipboardManager: ClipboardManager
     private lateinit var appBarConfiguration: AppBarConfiguration
     private lateinit var binding: ActivityMainBinding
     private lateinit var menuBinding: MenuBinding;
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        clipboardManager = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+
+        // Register the listener for clipboard changes
+        clipboardManager.addPrimaryClipChangedListener {
+            val clip = clipboardManager.primaryClip
+            if (clip != null && clip.itemCount > 0) {
+                val copiedText = clip.getItemAt(0).text.toString()
+                // Handle the copied text (for example, send it to the floating widget)
+                handleCopiedText(copiedText)
+            }
+        }
 
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
@@ -50,6 +63,12 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }
+    }
+
+    private fun handleCopiedText(text: String) {
+        // For example, update the floating widget or perform other operations
+        println("Copied text: $text")
+
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
@@ -77,6 +96,7 @@ class MainActivity : AppCompatActivity() {
         EasyWindow.with(application) // 'this' refers to the current Activity
             .setTag("floating_window")
             .setDraggable()
+            .setGravity(Gravity.HORIZONTAL_GRAVITY_MASK)
             .setContentView(R.layout.float_widget)
             .setOnClickListener(android.R.id.icon, EasyWindow.OnClickListener<ImageView?> { easyWindow, view ->
                 easyWindow.cancel()
@@ -121,4 +141,9 @@ class MainActivity : AppCompatActivity() {
         return Settings.canDrawOverlays(activity)
     }
 
+    override fun onDestroy() {
+        super.onDestroy()
+        // Remove the listener when the activity is destroyed
+        clipboardManager.removePrimaryClipChangedListener {}
+    }
 }
