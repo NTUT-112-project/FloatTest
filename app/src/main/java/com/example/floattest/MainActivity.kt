@@ -26,6 +26,7 @@ import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
 import com.example.floattest.databinding.ActivityMainBinding
+import com.example.floattest.databinding.FloatWidgetBinding
 import com.example.floattest.databinding.MenuBinding
 import com.hjq.window.EasyWindow
 import com.hjq.window.draggable.BaseDraggable
@@ -36,20 +37,13 @@ class MainActivity : AppCompatActivity() {
     private lateinit var clipboardManager: ClipboardManager
     private lateinit var appBarConfiguration: AppBarConfiguration
     private lateinit var binding: ActivityMainBinding
-    private lateinit var menuBinding: MenuBinding;
+    private lateinit var menuBinding: MenuBinding
+    private lateinit var floatWidgetBinding: FloatWidgetBinding
+    private lateinit var easyFloatWindow: EasyWindow<*>
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        easyFloatWindow = EasyWindow.with(application)
         clipboardManager = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-
-        // Register the listener for clipboard changes
-        clipboardManager.addPrimaryClipChangedListener {
-            val clip = clipboardManager.primaryClip
-            if (clip != null && clip.itemCount > 0) {
-                val copiedText = clip.getItemAt(0).text.toString()
-                // Handle the copied text (for example, send it to the floating widget)
-                handleCopiedText(copiedText)
-            }
-        }
 
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
@@ -71,6 +65,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun handleCopiedText(text: String) {
+        floatWidgetBinding.menuButton.setImageResource(R.drawable.ic_send)
+
         // For example, update the floating widget or perform other operations
         println("Copied text: $text")
 
@@ -98,6 +94,16 @@ class MainActivity : AppCompatActivity() {
                 || super.onSupportNavigateUp()
     }
     fun showFloatWidget(){
+        // Register the listener for clipboard changes
+        clipboardManager.addPrimaryClipChangedListener {
+            val clip = clipboardManager.primaryClip
+            if (clip != null && clip.itemCount > 0) {
+                val copiedText = clip.getItemAt(0).text.toString()
+                // Handle the copied text (for example, send it to the floating widget)
+                handleCopiedText(copiedText)
+            }
+        }
+
         val displayMetrics = DisplayMetrics()
         windowManager.defaultDisplay.getMetrics(displayMetrics)
         val screenWidth = displayMetrics.widthPixels
@@ -138,13 +144,13 @@ class MainActivity : AppCompatActivity() {
                 super.onStopDragging(easyWindow)
             }
         })
-
+        floatWidgetBinding = FloatWidgetBinding.inflate(layoutInflater)
         easyFloatWindow  // 'this' refers to the current Activity
             .setTag("floating_window")
             .setDraggable(springBackDraggable)
             .setGravity(Gravity.END or Gravity.CENTER)
-            .setContentView(R.layout.float_widget)
-            .setOnClickListener(android.R.id.icon, EasyWindow.OnClickListener<ImageView?> { easyWindow, view ->
+            .setContentView(floatWidgetBinding.root)
+            .setOnClickListener(R.id.menuButton, EasyWindow.OnClickListener<ImageView?> { easyWindow, view ->
                 easyWindow.cancel()
                 showMenu()
             })
