@@ -27,19 +27,30 @@ import android.widget.TextView
 import android.widget.Toast
 import com.example.floattest.databinding.ActivityMainBinding
 import com.example.floattest.databinding.FloatWidgetBinding
+import com.example.floattest.databinding.FloatWidgetOnTextingBinding
 import com.example.floattest.databinding.MenuBinding
 import com.hjq.window.EasyWindow
 import com.hjq.window.draggable.BaseDraggable
 import com.hjq.window.draggable.SpringBackDraggable
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 const val REQUEST_CODE_OVERLAY_PERMISSION = 1000
 class MainActivity : AppCompatActivity() {
     private lateinit var clipboardManager: ClipboardManager
     private lateinit var appBarConfiguration: AppBarConfiguration
+
     private lateinit var binding: ActivityMainBinding
     private lateinit var menuBinding: MenuBinding
     private lateinit var floatWidgetBinding: FloatWidgetBinding
+    private lateinit var floatWidgetOnTextingBinding: FloatWidgetOnTextingBinding
+
     private lateinit var easyFloatWindow: EasyWindow<*>
+
+    private var isLoading = true
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         easyFloatWindow = EasyWindow.with(application)
@@ -66,10 +77,19 @@ class MainActivity : AppCompatActivity() {
 
     private fun handleCopiedText(text: String) {
         floatWidgetBinding.menuButton.setImageResource(R.drawable.ic_send)
-
+        easyFloatWindow.setOnClickListener(R.id.menuButton, EasyWindow.OnClickListener<ImageView?> { easyWindow, view ->
+            floatWidgetBinding.menuButton.setImageResource(R.drawable.ic_menu)
+            switchToTextingMode()
+        })
         // For example, update the floating widget or perform other operations
         println("Copied text: $text")
 
+    }
+
+    private fun switchToTextingMode() {
+        floatWidgetOnTextingBinding = FloatWidgetOnTextingBinding.inflate(layoutInflater)
+        easyFloatWindow.setContentView(floatWidgetOnTextingBinding.root)
+        startLoadingAnimation()
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
@@ -108,26 +128,24 @@ class MainActivity : AppCompatActivity() {
         windowManager.defaultDisplay.getMetrics(displayMetrics)
         val screenWidth = displayMetrics.widthPixels
 
-        val easyFloatWindow = EasyWindow.with(application)
+        easyFloatWindow = EasyWindow.with(application)
         val springBackDraggable = SpringBackDraggable(SpringBackDraggable.ORIENTATION_HORIZONTAL)
         springBackDraggable.isAllowMoveToScreenNotch = false
         springBackDraggable.setSpringBackAnimCallback(object : SpringBackDraggable.SpringBackAnimCallback {
             override fun onSpringBackAnimationStart(easyWindow: EasyWindow<*>?, animator: Animator?) {}
 
             override fun onSpringBackAnimationEnd(easyWindow: EasyWindow<*>?, animator: Animator?) {
-                if (easyFloatWindow != null) {
-                    easyFloatWindow.decorView?.let { decorView ->
-                        if (easyFloatWindow .windowParams.x < screenWidth / 2) {
-                            decorView.translationX = (-20).toFloat()
-                            val objectAnimator = ObjectAnimator.ofFloat(decorView, "translationX", 0f, (-20).toFloat())
-                            objectAnimator.duration = 300
-                            objectAnimator.start()
-                        } else {
-                            decorView.translationX = (20).toFloat()
-                            val objectAnimator = ObjectAnimator.ofFloat(decorView, "translationX", 0f, (20).toFloat())
-                            objectAnimator.duration = 300
-                            objectAnimator.start()
-                        }
+                easyFloatWindow.decorView?.let { decorView ->
+                    if (easyFloatWindow .windowParams.x < screenWidth / 2) {
+                        decorView.translationX = (-20).toFloat()
+                        val objectAnimator = ObjectAnimator.ofFloat(decorView, "translationX", 0f, (-20).toFloat())
+                        objectAnimator.duration = 300
+                        objectAnimator.start()
+                    } else {
+                        decorView.translationX = (20).toFloat()
+                        val objectAnimator = ObjectAnimator.ofFloat(decorView, "translationX", 0f, (20).toFloat())
+                        objectAnimator.duration = 300
+                        objectAnimator.start()
                     }
                 }
             }
@@ -191,6 +209,20 @@ class MainActivity : AppCompatActivity() {
             activity.startActivityForResult(intent, REQUEST_CODE_OVERLAY_PERMISSION)
         }
         return Settings.canDrawOverlays(activity)
+    }
+
+    private fun startLoadingAnimation() {
+        // Use a Coroutine to update the text asynchronously
+        CoroutineScope(Dispatchers.Main).launch {
+            while (isLoading) {
+                floatWidgetOnTextingBinding.textView2.text = "."
+                delay(500L) // 500ms delay
+                floatWidgetOnTextingBinding.textView2.text = ".."
+                delay(500L) // 500ms delay
+                floatWidgetOnTextingBinding.textView2.text = "..."
+                delay(500L) // 500ms delay
+            }
+        }
     }
 
     override fun onDestroy() {
