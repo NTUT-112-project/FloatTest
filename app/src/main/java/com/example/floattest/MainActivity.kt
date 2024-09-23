@@ -5,6 +5,9 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.provider.Settings
+import android.util.DisplayMetrics
+import android.view.Gravity
+import android.view.LayoutInflater
 import androidx.appcompat.app.AppCompatActivity
 import androidx.navigation.findNavController
 import androidx.navigation.ui.AppBarConfiguration
@@ -12,16 +15,21 @@ import androidx.navigation.ui.navigateUp
 import androidx.navigation.ui.setupActionBarWithNavController
 import android.view.Menu
 import android.view.MenuItem
+import android.view.View
+import android.view.ViewGroup
+import android.widget.ArrayAdapter
+import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
 import com.example.floattest.databinding.ActivityMainBinding
+import com.example.floattest.databinding.MenuBinding
 import com.hjq.window.EasyWindow
 const val REQUEST_CODE_OVERLAY_PERMISSION = 1000
 class MainActivity : AppCompatActivity() {
 
     private lateinit var appBarConfiguration: AppBarConfiguration
     private lateinit var binding: ActivityMainBinding
-
+    private lateinit var menuBinding: MenuBinding;
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -37,14 +45,17 @@ class MainActivity : AppCompatActivity() {
         binding.fab.setOnClickListener {
             if(checkOverlayPermission(this)){
                 print("Floating Action Button Clicked");
-                EasyWindow.with(application) // 'this' refers to the current Activity
-                    .setDraggable()
-                    .setContentView(R.layout.float_widget)
-                    .setText(android.R.id.message, "lol")
-                    .setOnClickListener(android.R.id.message, EasyWindow.OnClickListener<TextView?> { easyWindow, view ->
-                        easyWindow.cancel()
-                    })
-                    .show()
+                if(!EasyWindow.existShowingByTag("floating_window")){
+                    EasyWindow.with(application) // 'this' refers to the current Activity
+                        .setTag("floating_window")
+                        .setDraggable()
+                        .setContentView(R.layout.float_widget)
+                        .setOnClickListener(android.R.id.icon, EasyWindow.OnClickListener<ImageView?> { easyWindow, view ->
+                            easyWindow.cancel()
+                            showMenu()
+                        })
+                        .show()
+                }
             }
         }
     }
@@ -70,7 +81,25 @@ class MainActivity : AppCompatActivity() {
         return navController.navigateUp(appBarConfiguration)
                 || super.onSupportNavigateUp()
     }
+    fun showMenu(){
+        val windowManager = windowManager
+        val displayMetrics = DisplayMetrics()
+        windowManager.defaultDisplay.getMetrics(displayMetrics)
 
+        menuBinding = MenuBinding.inflate(layoutInflater)
+        val languages = resources.getStringArray(R.array.languages)
+        val arrayAdapter = ArrayAdapter(this, R.layout.dropdown_item, languages)
+        menuBinding.autoCompleteTextView1.setAdapter(arrayAdapter)
+        menuBinding.autoCompleteTextView2.setAdapter(arrayAdapter)
+        EasyWindow.with(application)
+            .setTag("menu")
+            .setGravity(Gravity.BOTTOM)
+            .setContentView(menuBinding.root)
+            .setOutsideTouchable(true)
+            .setWidth(displayMetrics.widthPixels)
+//            .setOnClickListener(R.id.)
+            .show()
+    }
     fun checkOverlayPermission(activity: Activity): Boolean {
         if (!Settings.canDrawOverlays(activity)) {
             // If permission is not granted, show a message and navigate to settings
