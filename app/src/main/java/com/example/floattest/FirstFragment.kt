@@ -7,14 +7,14 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
 import androidx.navigation.fragment.findNavController
-import com.example.floattest.databinding.MenuBinding
+import com.example.floattest.databinding.FragmentFirstBinding
 
 /**
  * A simple [Fragment] subclass as the default destination in the navigation.
  */
 class FirstFragment : Fragment() {
 
-    private var _binding: MenuBinding? = null
+    private var _binding: FragmentFirstBinding? = null
 
     // This property is only valid between onCreateView and
     // onDestroyView.
@@ -24,15 +24,8 @@ class FirstFragment : Fragment() {
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-
-        _binding = MenuBinding.inflate(inflater, container, false)
-        val languages = resources.getStringArray(R.array.languages)
-        val arrayAdapter = ArrayAdapter(requireContext(), R.layout.dropdown_item, languages)
-        binding.autoCompleteTextView1.setAdapter(arrayAdapter)
-
-        binding.autoCompleteTextView2.setAdapter(arrayAdapter)
+        _binding = FragmentFirstBinding.inflate(inflater, container, false)
         return binding.root
-
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
