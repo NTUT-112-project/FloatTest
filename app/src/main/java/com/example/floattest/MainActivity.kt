@@ -46,15 +46,7 @@ class MainActivity : AppCompatActivity() {
             if(checkOverlayPermission(this)){
                 print("Floating Action Button Clicked");
                 if(!EasyWindow.existShowingByTag("floating_window")){
-                    EasyWindow.with(application) // 'this' refers to the current Activity
-                        .setTag("floating_window")
-                        .setDraggable()
-                        .setContentView(R.layout.float_widget)
-                        .setOnClickListener(android.R.id.icon, EasyWindow.OnClickListener<ImageView?> { easyWindow, view ->
-                            easyWindow.cancel()
-                            showMenu()
-                        })
-                        .show()
+                    showFloatWidget()
                 }
             }
         }
@@ -81,6 +73,17 @@ class MainActivity : AppCompatActivity() {
         return navController.navigateUp(appBarConfiguration)
                 || super.onSupportNavigateUp()
     }
+    fun showFloatWidget(){
+        EasyWindow.with(application) // 'this' refers to the current Activity
+            .setTag("floating_window")
+            .setDraggable()
+            .setContentView(R.layout.float_widget)
+            .setOnClickListener(android.R.id.icon, EasyWindow.OnClickListener<ImageView?> { easyWindow, view ->
+                easyWindow.cancel()
+                showMenu()
+            })
+            .show()
+    }
     fun showMenu(){
         val windowManager = windowManager
         val displayMetrics = DisplayMetrics()
@@ -97,7 +100,10 @@ class MainActivity : AppCompatActivity() {
             .setContentView(menuBinding.root)
             .setOutsideTouchable(true)
             .setWidth(displayMetrics.widthPixels)
-//            .setOnClickListener(R.id.)
+            .setOnClickListener(R.id.imageButton, EasyWindow.OnClickListener<ImageView?> { easyWindow, view ->
+                easyWindow.cancel()
+                showFloatWidget()
+            })
             .show()
     }
     fun checkOverlayPermission(activity: Activity): Boolean {
