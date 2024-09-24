@@ -49,7 +49,7 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var easyFloatWindow: EasyWindow<*>
 
-    private var isLoading = true
+    private var isLoading = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -65,38 +65,48 @@ class MainActivity : AppCompatActivity() {
         appBarConfiguration = AppBarConfiguration(navController.graph)
         setupActionBarWithNavController(navController, appBarConfiguration)
 
-        binding.fab.setOnClickListener {
-            if(checkOverlayPermission(this)){
-                print("Floating Action Button Clicked");
-                if(!EasyWindow.existShowingByTag("floating_window")){
-                    showFloatWidget()
-                }
+        if(checkOverlayPermission(this)){
+            print("Floating Action Button Clicked");
+            if(!EasyWindow.existShowingByTag("floating_window")){
+                showFloatWidget()
             }
         }
     }
 
     private fun handleCopiedText(text: String) {
-        floatWidgetBinding.menuButton.setImageResource(R.drawable.ic_send)
+
 
         easyFloatWindow.decorView?.let { decorView ->
             val objectAnimator = ObjectAnimator.ofFloat(decorView, "translationX", 0f, 0.toFloat())
             objectAnimator.duration = 300
             objectAnimator.start()
         }
-
+        //if something was copied, ready to send the text
+        floatWidgetBinding.menuButton.setImageResource(R.drawable.ic_send)
         easyFloatWindow.setOnClickListener(R.id.menuButton, EasyWindow.OnClickListener<ImageView?> { easyWindow, view ->
-            floatWidgetBinding.menuButton.setImageResource(R.drawable.ic_menu)
+            //send request with the text to backend
             switchToTextingMode()
         }).setDraggable(getSpringBackDraggable(easyFloatWindow,(0).toFloat()))
-        // For example, update the floating widget or perform other operations
-        println("Copied text: $text")
-
     }
 
     private fun switchToTextingMode() {
+        println("Switching to texting mode")
         floatWidgetOnTextingBinding = FloatWidgetOnTextingBinding.inflate(layoutInflater)
         easyFloatWindow
             .setContentView(floatWidgetOnTextingBinding.root)
+            .setOnClickListener(R.id.textView2, EasyWindow.OnClickListener<TextView?> { easyWindow, view ->
+            isLoading = false
+            floatWidgetBinding.menuButton.setImageResource(R.drawable.ic_menu)
+            easyFloatWindow
+                // if the textView is clicked, interrupt the request and return to menu icon
+                .setDraggable(getSpringBackDraggable(easyFloatWindow,(50).toFloat()))
+                .setGravity(Gravity.END or Gravity.CENTER)
+                .setContentView(floatWidgetBinding.root)
+                .setOnClickListener(R.id.menuButton, EasyWindow.OnClickListener<ImageView?> { easyWindow, view ->
+                    easyWindow.cancel()
+                    showMenu()
+                })
+        })
         startLoadingAnimation()
     }
 
@@ -162,7 +172,7 @@ class MainActivity : AppCompatActivity() {
             .setContentView(menuBinding.root)
             .setOutsideTouchable(true)
             .setWidth(displayMetrics.widthPixels)
-            .setOnClickListener(R.id.imageButton, EasyWindow.OnClickListener<ImageView?> { easyWindow, view ->
+            .setOnClickListener(R.id.close_spot, EasyWindow.OnClickListener<View?> { easyWindow, view ->
                 easyWindow.cancel()
                 showFloatWidget()
             })
@@ -185,6 +195,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun startLoadingAnimation() {
         // Use a Coroutine to update the text asynchronously
+        isLoading = true
         CoroutineScope(Dispatchers.Main).launch {
             while (isLoading) {
                 floatWidgetOnTextingBinding.textView2.text = "."
