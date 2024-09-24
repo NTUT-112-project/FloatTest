@@ -38,6 +38,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import java.io.IOException
 
 const val REQUEST_CODE_OVERLAY_PERMISSION = 1000
 class MainActivity : AppCompatActivity() {
@@ -58,14 +59,23 @@ class MainActivity : AppCompatActivity() {
     private var isLoading = false
 
     private val api: API = API()
-
+    private var myApiToken = ""
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         easyFloatWindow = EasyWindow.with(application)
         menuWindow = EasyWindow.with(application)
         clipboardManager = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-        api.login()
+
+        api.login(object : API.LoginCallback {
+            override fun onFailure(e: IOException) {
+                println("failed")
+            }
+            override fun onSuccess(apiToken: String) {
+                myApiToken=apiToken
+            }
+        })
+        
         binding = ActivityMainBinding.inflate(layoutInflater)
         floatWidgetBinding = FloatWidgetBinding.inflate(layoutInflater)
         floatWidgetOnTextingBinding = FloatWidgetOnTextingBinding.inflate(layoutInflater)
