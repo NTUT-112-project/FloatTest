@@ -1,5 +1,6 @@
 package com.example.floattest
 
+import API
 import android.animation.Animator
 import android.animation.ObjectAnimator
 import android.content.ClipboardManager
@@ -56,13 +57,15 @@ class MainActivity : AppCompatActivity() {
 
     private var isLoading = false
 
+    private val api: API = API()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         easyFloatWindow = EasyWindow.with(application)
         menuWindow = EasyWindow.with(application)
         clipboardManager = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-
+        api.login()
         binding = ActivityMainBinding.inflate(layoutInflater)
         floatWidgetBinding = FloatWidgetBinding.inflate(layoutInflater)
         floatWidgetOnTextingBinding = FloatWidgetOnTextingBinding.inflate(layoutInflater)
@@ -110,9 +113,8 @@ class MainActivity : AppCompatActivity() {
 
     private fun switchToTextingMode() {
         println("Switching to texting mode")
-        easyFloatWindow
-            .setContentView(floatWidgetOnTextingBinding.root)
-            .setOnClickListener(R.id.textView2, EasyWindow.OnClickListener<TextView?> { easyWindow, view ->
+        easyFloatWindow.setContentView(floatWidgetOnTextingBinding.root)
+        easyFloatWindow.setOnClickListener(R.id.textView2, EasyWindow.OnClickListener<TextView?> { easyWindow, view ->
             // if the textView is clicked, interrupt the request and return to menu icon
             isLoading = false
             getEasyWindowPosition(easyFloatWindow)
