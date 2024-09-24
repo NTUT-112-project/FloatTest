@@ -26,7 +26,6 @@ class API{
             .build()
         client.newCall(request).enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) {
-                println("login fucked up")
                 callback.onFailure(e)
             }
 
