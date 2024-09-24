@@ -1,18 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:orientation="vertical"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="wrap_content"
     android:layout_height="wrap_content"
-    android:gravity="center_horizontal">
-
-    <!-- Icon to display (android.R.id.icon) -->
-
-    <!-- Text message to display (android.R.id.message) -->
+    android:background="@drawable/rounded_square_background"
+    android:gravity="center"
+    android:orientation="vertical"
+    android:padding="10dp">
 
     <ImageView
         android:id="@+id/menuButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:src="@drawable/ic_menu" />
+        android:src="@drawable/ic_menu"
+        app:tint="@android:color/white" />
 
 </LinearLayout>

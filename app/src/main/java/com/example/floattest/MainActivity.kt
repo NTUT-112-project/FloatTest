@@ -77,10 +77,17 @@ class MainActivity : AppCompatActivity() {
 
     private fun handleCopiedText(text: String) {
         floatWidgetBinding.menuButton.setImageResource(R.drawable.ic_send)
+
+        easyFloatWindow.decorView?.let { decorView ->
+            val objectAnimator = ObjectAnimator.ofFloat(decorView, "translationX", 0f, 0.toFloat())
+            objectAnimator.duration = 300
+            objectAnimator.start()
+        }
+
         easyFloatWindow.setOnClickListener(R.id.menuButton, EasyWindow.OnClickListener<ImageView?> { easyWindow, view ->
             floatWidgetBinding.menuButton.setImageResource(R.drawable.ic_menu)
             switchToTextingMode()
-        })
+        }).setDraggable(getSpringBackDraggable(easyFloatWindow,(0).toFloat()))
         // For example, update the floating widget or perform other operations
         println("Copied text: $text")
 
@@ -90,7 +97,6 @@ class MainActivity : AppCompatActivity() {
         floatWidgetOnTextingBinding = FloatWidgetOnTextingBinding.inflate(layoutInflater)
         easyFloatWindow
             .setContentView(floatWidgetOnTextingBinding.root)
-            .setDraggable(getSpringBackDraggable(easyFloatWindow,(0).toFloat()))
         startLoadingAnimation()
     }
 
@@ -131,7 +137,7 @@ class MainActivity : AppCompatActivity() {
         floatWidgetBinding = FloatWidgetBinding.inflate(layoutInflater)
         easyFloatWindow  // 'this' refers to the current Activity
             .setTag("floating_window")
-            .setDraggable(getSpringBackDraggable(easyFloatWindow,(20).toFloat()))
+            .setDraggable(getSpringBackDraggable(easyFloatWindow,(50).toFloat()))
             .setGravity(Gravity.END or Gravity.CENTER)
             .setContentView(floatWidgetBinding.root)
             .setOnClickListener(R.id.menuButton, EasyWindow.OnClickListener<ImageView?> { easyWindow, view ->
