@@ -21,6 +21,7 @@ import android.view.Menu
 import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
+import android.view.WindowManager
 import android.widget.ArrayAdapter
 import android.widget.ImageView
 import android.widget.TextView
@@ -48,17 +49,36 @@ class MainActivity : AppCompatActivity() {
     private lateinit var floatWidgetOnTextingBinding: FloatWidgetOnTextingBinding
 
     private lateinit var easyFloatWindow: EasyWindow<*>
+    private lateinit var menuWindow: EasyWindow<*>
+
+    private var prevX = 0
+    private var prevY = 0
 
     private var isLoading = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
         easyFloatWindow = EasyWindow.with(application)
+        menuWindow = EasyWindow.with(application)
         clipboardManager = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
 
         binding = ActivityMainBinding.inflate(layoutInflater)
-        setContentView(binding.root)
+        floatWidgetBinding = FloatWidgetBinding.inflate(layoutInflater)
+        floatWidgetOnTextingBinding = FloatWidgetOnTextingBinding.inflate(layoutInflater)
+        menuBinding = MenuBinding.inflate(layoutInflater)
 
+        // Register the listener for clipboard changes
+        clipboardManager.addPrimaryClipChangedListener {
+            val clip = clipboardManager.primaryClip
+            if (clip != null && clip.itemCount > 0) {
+                val copiedText = clip.getItemAt(0).text.toString()
+                // Handle the copied text (for example, send it to the floating widget)
+                handleCopiedText(copiedText)
+            }
+        }
+
+        setContentView(binding.root)
         setSupportActionBar(binding.toolbar)
 
         val navController = findNavController(R.id.nav_host_fragment_content_main)
@@ -68,14 +88,13 @@ class MainActivity : AppCompatActivity() {
         if(checkOverlayPermission(this)){
             print("Floating Action Button Clicked");
             if(!EasyWindow.existShowingByTag("floating_window")){
+                //entrypoint
                 showFloatWidget()
             }
         }
     }
 
     private fun handleCopiedText(text: String) {
-
-
         easyFloatWindow.decorView?.let { decorView ->
             val objectAnimator = ObjectAnimator.ofFloat(decorView, "translationX", 0f, 0.toFloat())
             objectAnimator.duration = 300
@@ -91,21 +110,13 @@ class MainActivity : AppCompatActivity() {
 
     private fun switchToTextingMode() {
         println("Switching to texting mode")
-        floatWidgetOnTextingBinding = FloatWidgetOnTextingBinding.inflate(layoutInflater)
         easyFloatWindow
             .setContentView(floatWidgetOnTextingBinding.root)
             .setOnClickListener(R.id.textView2, EasyWindow.OnClickListener<TextView?> { easyWindow, view ->
+            // if the textView is clicked, interrupt the request and return to menu icon
             isLoading = false
-            floatWidgetBinding.menuButton.setImageResource(R.drawable.ic_menu)
-            easyFloatWindow
-                // if the textView is clicked, interrupt the request and return to menu icon
-                .setDraggable(getSpringBackDraggable(easyFloatWindow,(50).toFloat()))
-                .setGravity(Gravity.END or Gravity.CENTER)
-                .setContentView(floatWidgetBinding.root)
-                .setOnClickListener(R.id.menuButton, EasyWindow.OnClickListener<ImageView?> { easyWindow, view ->
-                    easyWindow.cancel()
-                    showMenu()
-                })
+            getEasyWindowPosition(easyFloatWindow)
+            showFloatWidget()
         })
         startLoadingAnimation()
     }
@@ -131,52 +142,60 @@ class MainActivity : AppCompatActivity() {
         return navController.navigateUp(appBarConfiguration)
                 || super.onSupportNavigateUp()
     }
+
     fun showFloatWidget(){
-        // Register the listener for clipboard changes
-        clipboardManager.addPrimaryClipChangedListener {
-            val clip = clipboardManager.primaryClip
-            if (clip != null && clip.itemCount > 0) {
-                val copiedText = clip.getItemAt(0).text.toString()
-                // Handle the copied text (for example, send it to the floating widget)
-                handleCopiedText(copiedText)
-            }
-        }
-
-        easyFloatWindow = EasyWindow.with(application)
-
-        floatWidgetBinding = FloatWidgetBinding.inflate(layoutInflater)
+        floatWidgetBinding.menuButton.setImageResource(R.drawable.ic_menu)
+        setEasyWindowPosition(easyFloatWindow)
         easyFloatWindow  // 'this' refers to the current Activity
             .setTag("floating_window")
             .setDraggable(getSpringBackDraggable(easyFloatWindow,(50).toFloat()))
-            .setGravity(Gravity.END or Gravity.CENTER)
+//            .setGravity(Gravity.END or Gravity.CENTER)
             .setContentView(floatWidgetBinding.root)
             .setOnClickListener(R.id.menuButton, EasyWindow.OnClickListener<ImageView?> { easyWindow, view ->
+                //open large menu, close the floating widget and get current floating widget position
                 easyWindow.cancel()
+                getEasyWindowPosition(easyFloatWindow)
                 showMenu()
             })
-            .show()
+        if(!EasyWindow.existShowingByTag("floating_window")){
+            easyFloatWindow.show()
+        }
     }
+
+    private fun getEasyWindowPosition(targetEasyWindow: EasyWindow<*>) {
+        prevX = targetEasyWindow.windowParams.x
+        prevY = targetEasyWindow.windowParams.y
+        println("get position:\n prevX: $prevX, prevY: $prevY")
+    }
+    private fun setEasyWindowPosition(targetEasyWindow: EasyWindow<*>) {
+        targetEasyWindow.windowParams.x = prevX
+        targetEasyWindow.windowParams.y = prevY
+        println("set position:\n prevX: $prevX, prevY: $prevY")
+    }
+
     fun showMenu(){
         val windowManager = windowManager
         val displayMetrics = DisplayMetrics()
         windowManager.defaultDisplay.getMetrics(displayMetrics)
 
-        menuBinding = MenuBinding.inflate(layoutInflater)
         val languages = resources.getStringArray(R.array.languages)
         val arrayAdapter = ArrayAdapter(this, R.layout.dropdown_item, languages)
         menuBinding.autoCompleteTextView1.setAdapter(arrayAdapter)
         menuBinding.autoCompleteTextView2.setAdapter(arrayAdapter)
-        EasyWindow.with(application)
+        menuWindow
             .setTag("menu")
             .setGravity(Gravity.BOTTOM)
             .setContentView(menuBinding.root)
             .setOutsideTouchable(true)
             .setWidth(displayMetrics.widthPixels)
             .setOnClickListener(R.id.close_spot, EasyWindow.OnClickListener<View?> { easyWindow, view ->
+                //close the large menu and open the floating widget
                 easyWindow.cancel()
                 showFloatWidget()
             })
-            .show()
+        if(!EasyWindow.existShowingByTag("menu")){
+            menuWindow.show()
+        }
     }
     fun checkOverlayPermission(activity: Activity): Boolean {
         if (!Settings.canDrawOverlays(activity)) {
