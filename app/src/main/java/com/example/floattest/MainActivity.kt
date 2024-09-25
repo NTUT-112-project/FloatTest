@@ -73,8 +73,28 @@ class MainActivity : AppCompatActivity() {
             }
             override fun onSuccess(apiToken: String) {
                 myApiToken=apiToken
+                println("my api token is $myApiToken")
+
+                api.getLLMTranslate(
+                    apiToken = myApiToken, srcLanguage = "english", distLanguage = "chinese", srcText = "hi, how are you",
+                    callback = object: API.LLMTranslateCallback {
+                        override fun onFailure(e: IOException) {
+                            println("failed")
+                        }
+                        override fun onChunkReceived(chunk: String) {
+                            println(chunk)
+                        }
+                        override fun onStarted() {
+                            println("start")
+                        }
+                        override fun onFinish() {
+                            println("finished")
+                        }
+                    })
             }
         })
+
+
         
         binding = ActivityMainBinding.inflate(layoutInflater)
         floatWidgetBinding = FloatWidgetBinding.inflate(layoutInflater)

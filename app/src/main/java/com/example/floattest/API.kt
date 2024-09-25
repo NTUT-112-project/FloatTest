@@ -39,10 +39,83 @@ class API{
             }
         })
     }
+
+    interface LLMTranslateCallback {
+        fun onStarted()
+        fun onChunkReceived(chunk: String)
+        fun onFinish()
+        fun onFailure(e: IOException)
+    }
+
+    fun getLLMTranslate(apiToken: String, srcLanguage: String, distLanguage: String, srcText: String, callback: LLMTranslateCallback) {
+        var url = ""
+        if(srcLanguage == ""){
+            url = "$route/api/streamTranslate?api_token=$apiToken&apiKey=none"+"&distLanguage=$distLanguage"+"&srcLanguage=$srcLanguage"+"&srcText=$srcText"
+        }else{
+            url = "$route/api/streamTranslate?api_token=$apiToken&apiKey=none"+"&distLanguage=$distLanguage"+"&srcText=$srcText"
+        }
+
+        val requestBody = FormBody.Builder()
+            .build()
+        val request = Request.Builder()
+            .url(url)
+            .post(requestBody)
+            .build()
+        callback.onStarted()
+        client.newCall(request).enqueue(object : Callback {
+            override fun onFailure(call: Call, e: IOException) {
+                callback.onFailure(e)
+            }
+
+            override fun onResponse(call: Call, response: Response) {
+                // Ensure the response is successful
+                if (!response.isSuccessful) {
+                    println("Unexpected code $response")
+                    return
+                }
+
+                // Get the response body as a stream
+                val responseBody = response.body ?: return
+                val source = responseBody.source()
+
+                try {
+                    // Read the stream in chunks
+                    while (!source.exhausted()) {
+                        val line = source.readUtf8Line()
+                        try {
+                            val gson = Gson()
+                            val responseChunk = gson.fromJson(line, MessageResponse::class.java)
+                            callback.onChunkReceived(responseChunk.message.content)
+
+                        } catch (_: Exception){
+                            println("failed to parse")
+                        }
+                    }
+                } catch (e: IOException) {
+                    e.printStackTrace()
+                } finally {
+                    callback.onFinish()
+                    responseBody.close() // Always close the response
+                }
+            }
+        })
+    }
 }
 
 data class LoginResponse(
     val success: Boolean,
     val data: String,
     val message: String
+)
+
+data class MessageResponse(
+    val model: String,
+    val created_at: String,
+    val message: Message,
+    val done: Boolean
+)
+
+data class Message(
+    val role: String,
+    val content: String
 )
