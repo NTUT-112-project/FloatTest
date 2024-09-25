@@ -98,7 +98,6 @@ class API{
                 } catch (e: IOException) {
                     callback.onFailure(e)
                 } finally {
-                    callback.onFinish()
                     responseBody.close() // Always close the response
                 }
             }

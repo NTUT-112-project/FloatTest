@@ -134,6 +134,7 @@ class MainActivity : AppCompatActivity() {
             getEasyWindowPosition(easyFloatWindow)
             showFloatWidget()
         })
+        var startTime: Long = 0
         api.getLLMTranslate(
             apiToken = myApiToken, srcLanguage = "english", distLanguage = "chinese", srcText = text,
             callback = object: API.LLMTranslateCallback {
@@ -151,9 +152,13 @@ class MainActivity : AppCompatActivity() {
                     }
                 }
                 override fun onStarted() {
+                    startTime = System.nanoTime()
 //                    startLoadingAnimation()
                 }
                 override fun onFinish() {
+                    val endTime = System.nanoTime()
+                    val duration = (endTime - startTime) / 1000000 // Convert to milliseconds
+                    println("Translation time: $duration ms")
                     isLoading = false
                     runOnUiThread {
                         easyFloatWindow.setOnClickListener(
