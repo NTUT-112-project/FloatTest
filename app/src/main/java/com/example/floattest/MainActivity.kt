@@ -153,6 +153,9 @@ class MainActivity : AppCompatActivity() {
                 }
                 override fun onStarted() {
                     startTime = System.nanoTime()
+                    runOnUiThread{
+                        floatWidgetOnTextingBinding.textView2.text = " "
+                    }
 //                    startLoadingAnimation()
                 }
                 override fun onFinish() {
