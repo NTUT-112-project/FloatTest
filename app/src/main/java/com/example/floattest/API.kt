@@ -85,14 +85,18 @@ class API{
                         try {
                             val gson = Gson()
                             val responseChunk = gson.fromJson(line, MessageResponse::class.java)
+                            println(responseChunk)
                             callback.onChunkReceived(responseChunk.message.content)
+                            if (responseChunk.done){
+                                callback.onFinish()
+                            }
 
-                        } catch (_: Exception){
-                            println("failed to parse")
+                        } catch (err: Exception){
+                            error(err)
                         }
                     }
                 } catch (e: IOException) {
-                    e.printStackTrace()
+                    callback.onFailure(e)
                 } finally {
                     callback.onFinish()
                     responseBody.close() // Always close the response
@@ -112,7 +116,14 @@ data class MessageResponse(
     val model: String,
     val created_at: String,
     val message: Message,
-    val done: Boolean
+    val done: Boolean,
+    val done_reason: String?,
+    val total_duration: Long?,
+    val load_duration: Long?,
+    val prompt_eval_count: Long?,
+    val prompt_eval_duration: Long?,
+    val eval_count: Long?,
+    val eval_duration: Long?,
 )
 
 data class Message(

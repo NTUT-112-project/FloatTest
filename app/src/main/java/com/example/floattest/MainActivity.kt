@@ -3,6 +3,7 @@ package com.example.floattest
 import API
 import android.animation.Animator
 import android.animation.ObjectAnimator
+import android.annotation.SuppressLint
 import android.content.ClipboardManager
 import android.content.Context
 import android.app.Activity
@@ -62,7 +63,7 @@ class MainActivity : AppCompatActivity() {
     private var myApiToken = ""
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
+        //TODO solve java.lang.RuntimeException: Unable to start activity ComponentInfo{com.example.floattest/com.example.floattest.MainActivity}: android.view.InflateException: Binary XML file line #22: Binary XML file line #18: Error inflating class fragment
         easyFloatWindow = EasyWindow.with(application)
         menuWindow = EasyWindow.with(application)
         clipboardManager = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
@@ -74,27 +75,9 @@ class MainActivity : AppCompatActivity() {
             override fun onSuccess(apiToken: String) {
                 myApiToken=apiToken
                 println("my api token is $myApiToken")
-
-                api.getLLMTranslate(
-                    apiToken = myApiToken, srcLanguage = "english", distLanguage = "chinese", srcText = "hi, how are you",
-                    callback = object: API.LLMTranslateCallback {
-                        override fun onFailure(e: IOException) {
-                            println("failed")
-                        }
-                        override fun onChunkReceived(chunk: String) {
-                            println(chunk)
-                        }
-                        override fun onStarted() {
-                            println("start")
-                        }
-                        override fun onFinish() {
-                            println("finished")
-                        }
-                    })
             }
         })
-
-
+        while(myApiToken == "")
         
         binding = ActivityMainBinding.inflate(layoutInflater)
         floatWidgetBinding = FloatWidgetBinding.inflate(layoutInflater)
@@ -137,12 +120,13 @@ class MainActivity : AppCompatActivity() {
         floatWidgetBinding.menuButton.setImageResource(R.drawable.ic_send)
         easyFloatWindow.setOnClickListener(R.id.menuButton, EasyWindow.OnClickListener<ImageView?> { easyWindow, view ->
             //send request with the text to backend
-            switchToTextingMode()
+            switchToTextingMode(text)
         }).setDraggable(getSpringBackDraggable(easyFloatWindow,(0).toFloat()))
     }
 
-    private fun switchToTextingMode() {
+    private fun switchToTextingMode(text: String) {
         println("Switching to texting mode")
+        //TODO: resolve Attempt to invoke virtual method 'void android.view.View.setClickable(boolean)' on a null object reference here
         easyFloatWindow.setContentView(floatWidgetOnTextingBinding.root)
         easyFloatWindow.setOnClickListener(R.id.textView2, EasyWindow.OnClickListener<TextView?> { easyWindow, view ->
             // if the textView is clicked, interrupt the request and return to menu icon
@@ -150,7 +134,37 @@ class MainActivity : AppCompatActivity() {
             getEasyWindowPosition(easyFloatWindow)
             showFloatWidget()
         })
-        startLoadingAnimation()
+        api.getLLMTranslate(
+            apiToken = myApiToken, srcLanguage = "english", distLanguage = "chinese", srcText = text,
+            callback = object: API.LLMTranslateCallback {
+                override fun onFailure(e: IOException) {
+                    isLoading = false
+                    getEasyWindowPosition(easyFloatWindow)
+                    showFloatWidget()
+                }
+                @SuppressLint("SetTextI18n")
+                override fun onChunkReceived(chunk: String) {
+                    isLoading = false
+                    runOnUiThread {
+                        floatWidgetOnTextingBinding.textView2.text =
+                            "${floatWidgetOnTextingBinding.textView2.text}${chunk}"
+                    }
+                }
+                override fun onStarted() {
+//                    startLoadingAnimation()
+                }
+                override fun onFinish() {
+                    isLoading = false
+                    runOnUiThread {
+                        easyFloatWindow.setOnClickListener(
+                            R.id.textView2,
+                            EasyWindow.OnClickListener<TextView?> { easyWindow, view ->
+                                getEasyWindowPosition(easyFloatWindow)
+                                showFloatWidget()
+                            })
+                    }
+                }
+            })
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
@@ -249,11 +263,11 @@ class MainActivity : AppCompatActivity() {
         isLoading = true
         CoroutineScope(Dispatchers.Main).launch {
             while (isLoading) {
-                floatWidgetOnTextingBinding.textView2.text = "."
+                floatWidgetOnTextingBinding.textView2.text = " ."
                 delay(500L) // 500ms delay
-                floatWidgetOnTextingBinding.textView2.text = ".."
+                floatWidgetOnTextingBinding.textView2.text = " .."
                 delay(500L) // 500ms delay
-                floatWidgetOnTextingBinding.textView2.text = "..."
+                floatWidgetOnTextingBinding.textView2.text = " ..."
                 delay(500L) // 500ms delay
             }
         }
