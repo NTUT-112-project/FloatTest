@@ -1,6 +1,7 @@
 package com.example.floattest
 
 import API
+import android.content.Intent
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import android.widget.Button
@@ -31,6 +32,9 @@ class MainActivity : AppCompatActivity() {
                 }
                 override fun onSuccess(apiToken: String) {
                     println("my api token is $apiToken")
+                    val intent = Intent(this@MainActivity, menuActivity::class.java)
+                    intent.putExtra("API_TOKEN", apiToken)
+                    startActivity(intent)
                 }
             }, username, password)
         }
