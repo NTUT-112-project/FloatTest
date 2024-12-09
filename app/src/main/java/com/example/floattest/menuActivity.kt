@@ -16,19 +16,12 @@ import android.view.Gravity
 import android.view.Menu
 import android.view.View
 import android.widget.ArrayAdapter
+import android.widget.Button
+import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
-import com.google.android.material.snackbar.Snackbar
-import com.google.android.material.navigation.NavigationView
-import androidx.navigation.findNavController
-import androidx.navigation.ui.AppBarConfiguration
-import androidx.navigation.ui.navigateUp
-import androidx.navigation.ui.setupActionBarWithNavController
-import androidx.navigation.ui.setupWithNavController
-import androidx.drawerlayout.widget.DrawerLayout
 import androidx.appcompat.app.AppCompatActivity
-import com.example.floattest.databinding.ActivityMenuBinding
 import com.example.floattest.databinding.FloatWidgetBinding
 import com.example.floattest.databinding.FloatWidgetOnTextingBinding
 import com.example.floattest.databinding.MenuBinding
@@ -43,46 +36,6 @@ import java.io.IOException
 
 class menuActivity : AppCompatActivity() {
 
-    private lateinit var appBarConfiguration: AppBarConfiguration
-    private lateinit var binding: ActivityMenuBinding
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-
-        binding = ActivityMenuBinding.inflate(layoutInflater)
-        setContentView(binding.root)
-
-        setSupportActionBar(binding.appBarMenu.toolbar)
-
-        binding.appBarMenu.fab.setOnClickListener { view ->
-            Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                .setAction("Action", null)
-                .setAnchorView(R.id.fab).show()
-        }
-        val drawerLayout: DrawerLayout = binding.drawerLayout
-        val navView: NavigationView = binding.navView
-        val navController = findNavController(R.id.nav_host_fragment_content_menu)
-        // Passing each menu ID as a set of Ids because each
-        // menu should be considered as top level destinations.
-        appBarConfiguration = AppBarConfiguration(
-            setOf(
-                R.id.nav_home, R.id.nav_gallery, R.id.nav_slideshow
-            ), drawerLayout
-        )
-        setupActionBarWithNavController(navController, appBarConfiguration)
-        navView.setupWithNavController(navController)
-    }
-
-    override fun onCreateOptionsMenu(menu: Menu): Boolean {
-        // Inflate the menu; this adds items to the action bar if it is present.
-        menuInflater.inflate(R.menu.menu, menu)
-        return true
-    }
-
-    override fun onSupportNavigateUp(): Boolean {
-        val navController = findNavController(R.id.nav_host_fragment_content_menu)
-        return navController.navigateUp(appBarConfiguration) || super.onSupportNavigateUp()
-    }
     private lateinit var clipboardManager: ClipboardManager
     private lateinit var menuBinding: MenuBinding
     private lateinit var floatWidgetBinding: FloatWidgetBinding
@@ -97,16 +50,22 @@ class menuActivity : AppCompatActivity() {
     private var isLoading = false
     private val api: API = API()
 
-    fun create(){
-        easyFloatWindow = EasyWindow.with(application)
-        menuWindow = EasyWindow.with(application)
-        clipboardManager = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+    private lateinit var startBtn: ImageButton
+    private lateinit var apiToken: String
 
-        floatWidgetBinding = FloatWidgetBinding.inflate(layoutInflater)
-        floatWidgetOnTextingBinding = FloatWidgetOnTextingBinding.inflate(layoutInflater)
-        menuBinding = MenuBinding.inflate(layoutInflater)
+    private var srcLanguageIndex: Int = 0
+    private var destLanguageIndex: Int = 0
+    private val languages: Array<String> = resources.getStringArray(R.array.languages)
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_menu)
+        startBtn = findViewById(R.id.imageButton)
+
+        apiToken = intent.getStringExtra("API_TOKEN").toString()
 
         // Register the listener for clipboard changes
+        clipboardManager = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
         clipboardManager.addPrimaryClipChangedListener {
             val clip = clipboardManager.primaryClip
             if (clip != null && clip.itemCount > 0) {
@@ -115,18 +74,20 @@ class menuActivity : AppCompatActivity() {
                 handleCopiedText(copiedText)
             }
         }
+        easyFloatWindow = EasyWindow.with(application)
+        menuWindow = EasyWindow.with(application)
 
-        setContentView(binding.root)
+        floatWidgetBinding = FloatWidgetBinding.inflate(layoutInflater)
+        floatWidgetOnTextingBinding = FloatWidgetOnTextingBinding.inflate(layoutInflater)
+        menuBinding = MenuBinding.inflate(layoutInflater)
 
-        val navController = findNavController(R.id.nav_host_fragment_content_main)
-        appBarConfiguration = AppBarConfiguration(navController.graph)
-        setupActionBarWithNavController(navController, appBarConfiguration)
-
-        if(checkOverlayPermission(this)){
-            print("Floating Action Button Clicked");
-            if(!EasyWindow.existShowingByTag("floating_window")){
-                //entrypoint
-                showFloatWidget()
+        startBtn.setOnClickListener{
+            if(checkOverlayPermission(this)){
+                print("Floating Action Button Clicked");
+                if(!EasyWindow.existShowingByTag("floating_window")){
+                    //entrypoint
+                    showFloatWidget()
+                }
             }
         }
     }
@@ -157,7 +118,10 @@ class menuActivity : AppCompatActivity() {
         })
         var startTime: Long = 0
         api.getLLMTranslate(
-            apiToken = "lol", srcLanguage = "english", distLanguage = "chinese", srcText = text,
+            apiToken = apiToken,
+            srcLanguage = languages[srcLanguageIndex],
+            distLanguage = languages[destLanguageIndex],
+            srcText = text,
             callback = object: API.LLMTranslateCallback {
                 override fun onFailure(e: IOException) {
                     isLoading = false
@@ -229,8 +193,6 @@ class menuActivity : AppCompatActivity() {
         val windowManager = windowManager
         val displayMetrics = DisplayMetrics()
         windowManager.defaultDisplay.getMetrics(displayMetrics)
-
-        val languages = resources.getStringArray(R.array.languages)
         val arrayAdapter = ArrayAdapter(this, R.layout.dropdown_item, languages)
         menuBinding.autoCompleteTextView1.setAdapter(arrayAdapter)
         menuBinding.autoCompleteTextView2.setAdapter(arrayAdapter)
@@ -242,6 +204,7 @@ class menuActivity : AppCompatActivity() {
             .setWidth(displayMetrics.widthPixels)
             .setOnClickListener(R.id.close_spot, EasyWindow.OnClickListener<View?> { easyWindow, view ->
                 //close the large menu and open the floating widget
+                menuBinding.switch1.id
                 easyWindow.cancel()
                 showFloatWidget()
             })
