@@ -1,4 +1,5 @@
 import com.google.gson.Gson
+import com.google.gson.JsonSyntaxException
 import okhttp3.*
 import okhttp3.MediaType.Companion.toMediaType
 import java.io.IOException
@@ -8,7 +9,7 @@ class API{
     // Define your OkHttp client
     val client = OkHttpClient()
 
-    val route = "https://192.168.0.100:8444"
+    val route = "http://10.0.2.2:8080"
     // Create the request body
     val jsonMediaType = "application/json; charset=utf-8".toMediaType()
     interface LoginCallback {
@@ -16,8 +17,8 @@ class API{
         fun onFailure(e: IOException)
     }
 
-    fun login(callback: LoginCallback){
-        val url = "$route/api/signIn?uid=user&password=user123"
+    fun login(callback: LoginCallback, username:String, password:String){
+        val url = "$route/api/signIn?uid=$username&password=$password"
         val requestBody = FormBody.Builder()
             .build()
         val request = Request.Builder()
@@ -30,11 +31,27 @@ class API{
             }
 
             override fun onResponse(call: Call, response: Response) {
-                if (response.isSuccessful) {
+                try {
                     val jsonString = response.body?.string()
+                    print("data: $jsonString")
+                    if (jsonString.isNullOrEmpty()) {
+                        callback.onFailure(IOException("Empty or null response body"))
+                        return
+                    }
+
                     val gson = Gson()
-                    val loginResponse = gson.fromJson(jsonString, LoginResponse::class.java)
-                    callback.onSuccess(loginResponse.data)
+                    try {
+                        val loginResponse = gson.fromJson(jsonString, LoginResponse::class.java)
+                        if (loginResponse.success) {
+                            callback.onSuccess(loginResponse.data)
+                        } else {
+                            callback.onFailure(IOException("Wrong password"))
+                        }
+                    } catch (e: JsonSyntaxException) {
+                        callback.onFailure(IOException("Invalid JSON response", e))
+                    }
+                } catch (e: IOException) {
+                    callback.onFailure(IOException("Error reading response body", e))
                 }
             }
         })
