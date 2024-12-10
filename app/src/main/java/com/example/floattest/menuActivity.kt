@@ -55,7 +55,7 @@ class menuActivity : AppCompatActivity() {
 
     private var srcLanguageIndex: Int = 0
     private var destLanguageIndex: Int = 0
-    private val languages: Array<String> = resources.getStringArray(R.array.languages)
+    private lateinit var languages: Array<String>
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -63,7 +63,7 @@ class menuActivity : AppCompatActivity() {
         startBtn = findViewById(R.id.imageButton)
 
         apiToken = intent.getStringExtra("API_TOKEN").toString()
-
+        languages = resources.getStringArray(R.array.languages)
         // Register the listener for clipboard changes
         clipboardManager = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
         clipboardManager.addPrimaryClipChangedListener {
@@ -132,8 +132,7 @@ class menuActivity : AppCompatActivity() {
                 override fun onChunkReceived(chunk: String) {
                     isLoading = false
                     runOnUiThread {
-                        floatWidgetOnTextingBinding.textView2.text =
-                            "${floatWidgetOnTextingBinding.textView2.text}${chunk}"
+                        floatWidgetOnTextingBinding.textView2.text = chunk
                     }
                 }
                 override fun onStarted() {
@@ -141,7 +140,7 @@ class menuActivity : AppCompatActivity() {
                     runOnUiThread{
                         floatWidgetOnTextingBinding.textView2.text = " "
                     }
-//                    startLoadingAnimation()
+                    startLoadingAnimation()
                 }
                 override fun onFinish() {
                     val endTime = System.nanoTime()
