@@ -233,13 +233,19 @@ class menuActivity : AppCompatActivity() {
         // Use a Coroutine to update the text asynchronously
         isLoading = true
         CoroutineScope(Dispatchers.Main).launch {
-            while (isLoading) {
-                floatWidgetOnTextingBinding.textView2.text = " ."
-                delay(300L) // 500ms delay
-                floatWidgetOnTextingBinding.textView2.text = " .."
-                delay(300L) // 500ms delay
-                floatWidgetOnTextingBinding.textView2.text = " ..."
-                delay(300L) // 500ms delay
+            while (isLoading){
+                if(floatWidgetOnTextingBinding.textView2.text == " " || floatWidgetOnTextingBinding.textView2.text == " ..."){
+                    floatWidgetOnTextingBinding.textView2.text = " ."
+                }
+                delay(500L) // 500ms delay
+                if(floatWidgetOnTextingBinding.textView2.text == " ."){
+                    floatWidgetOnTextingBinding.textView2.text = " .."
+                }
+                delay(500L) // 500ms delay
+                if(floatWidgetOnTextingBinding.textView2.text == " .."){
+                    floatWidgetOnTextingBinding.textView2.text = " ..."
+                }
+                delay(500L) // 500ms delay
             }
         }
     }
