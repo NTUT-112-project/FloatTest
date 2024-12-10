@@ -63,8 +63,50 @@ class API{
         fun onFinish()
         fun onFailure(e: IOException)
     }
+    fun getLLMTranslate(apiToken: String, srcLanguage: String, distLanguage: String, srcText: String, callback: LLMTranslateCallback){
+        var url = ""
+        if(srcLanguage == ""){
+            url = "$route/api/translate?api_token=$apiToken&apiKey=none"+"&distLanguage=$distLanguage"+"&srcLanguage=$srcLanguage"+"&srcText=$srcText"
+        }else{
+            url = "$route/api/translate?api_token=$apiToken&apiKey=none"+"&distLanguage=$distLanguage"+"&srcText=$srcText"
+        }
+        val requestBody = FormBody.Builder()
+            .build()
+        val request = Request.Builder()
+            .url(url)
+            .post(requestBody)
+            .build()
+        callback.onStarted()
+        client.newCall(request).enqueue(object : Callback {
+            override fun onFailure(call: Call, e: IOException) {
+                callback.onFailure(e)
+            }
 
-    fun getLLMTranslate(apiToken: String, srcLanguage: String, distLanguage: String, srcText: String, callback: LLMTranslateCallback) {
+            override fun onResponse(call: Call, response: Response) {
+                // Ensure the response is successful
+                if (!response.isSuccessful) {
+                    println("Unexpected code $response")
+                    return
+                }
+                val jsonString = response.body?.string()
+                val gson = Gson()
+                try {
+                    val translateResponse = gson.fromJson(jsonString, TranslateResponse::class.java)
+                    if (translateResponse.success) {
+                        callback.onChunkReceived(translateResponse.data.message.content)
+                        callback.onFinish()
+                    } else {
+                        callback.onFailure(IOException("Wrong password"))
+                    }
+                } catch (e: JsonSyntaxException) {
+                    callback.onFailure(IOException("Invalid JSON response", e))
+                }
+            }
+        })
+    }
+
+
+    fun getStreamLLMTranslate(apiToken: String, srcLanguage: String, distLanguage: String, srcText: String, callback: LLMTranslateCallback) {
         var url = ""
         if(srcLanguage == ""){
             url = "$route/api/streamTranslate?api_token=$apiToken&apiKey=none"+"&distLanguage=$distLanguage"+"&srcLanguage=$srcLanguage"+"&srcText=$srcText"
@@ -125,6 +167,12 @@ class API{
 data class LoginResponse(
     val success: Boolean,
     val data: String,
+    val message: String
+)
+
+data class TranslateResponse(
+    val success: Boolean,
+    val data: MessageResponse,
     val message: String
 )
 
