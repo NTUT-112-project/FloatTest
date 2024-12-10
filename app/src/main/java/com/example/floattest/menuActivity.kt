@@ -53,8 +53,8 @@ class menuActivity : AppCompatActivity() {
     private lateinit var startBtn: ImageButton
     private lateinit var apiToken: String
 
-    private var srcLanguageIndex: Int = 0
-    private var destLanguageIndex: Int = 0
+    private var srcLang: String = ""
+    private var destLang: String = ""
     private lateinit var languages: Array<String>
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -119,8 +119,8 @@ class menuActivity : AppCompatActivity() {
         var startTime: Long = 0
         api.getLLMTranslate(
             apiToken = apiToken,
-            srcLanguage = languages[srcLanguageIndex],
-            distLanguage = languages[destLanguageIndex],
+            srcLanguage = srcLang,
+            distLanguage = destLang,
             srcText = text,
             callback = object: API.LLMTranslateCallback {
                 override fun onFailure(e: IOException) {
@@ -203,7 +203,10 @@ class menuActivity : AppCompatActivity() {
             .setWidth(displayMetrics.widthPixels)
             .setOnClickListener(R.id.close_spot, EasyWindow.OnClickListener<View?> { easyWindow, view ->
                 //close the large menu and open the floating widget
-                menuBinding.switch1.id
+                srcLang=menuBinding.autoCompleteTextView1.text.toString()
+                destLang=menuBinding.autoCompleteTextView2.text.toString()
+
+                print("languages src: $srcLang dest: $destLang")
                 easyWindow.cancel()
                 showFloatWidget()
             })
@@ -232,11 +235,11 @@ class menuActivity : AppCompatActivity() {
         CoroutineScope(Dispatchers.Main).launch {
             while (isLoading) {
                 floatWidgetOnTextingBinding.textView2.text = " ."
-                delay(500L) // 500ms delay
+                delay(300L) // 500ms delay
                 floatWidgetOnTextingBinding.textView2.text = " .."
-                delay(500L) // 500ms delay
+                delay(300L) // 500ms delay
                 floatWidgetOnTextingBinding.textView2.text = " ..."
-                delay(500L) // 500ms delay
+                delay(300L) // 500ms delay
             }
         }
     }
